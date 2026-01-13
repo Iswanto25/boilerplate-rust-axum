@@ -1,9 +1,5 @@
+use axum::{routing::get, Json};
 use dotenvy::dotenv;
-use axum::{
-    routing::get,
-    Json,
-};
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
 
 mod config;
 mod db;
@@ -26,55 +22,49 @@ async fn health_check_handler() -> Json<serde_json::Value> {
 
 #[tokio::main]
 async fn main() {
+    // Load environment variables
     dotenv().ok();
-    
-    let file_appender = tracing_appender::rolling::daily("logs", "server.log");
-    let (non_blocking, _guard) = tracing_appender::non_blocking(file_appender);
-    
-    tracing_subscriber::registry()
-        .with(
-            tracing_subscriber::fmt::layer()
-                .with_writer(std::io::stdout)
-                .with_ansi(true)
-        )
-        .with(
-            tracing_subscriber::fmt::layer()
-                .with_writer(non_blocking)
-                .with_ansi(false)
-        )
-        .with(tracing_subscriber::EnvFilter::from_default_env()
-            .add_directive(tracing::Level::INFO.into()))
-        .init();
-    
-    tracing::info!("🚀 Starting Rust Boilerplate Server...");
-    
-    let state = AppState {};
-    let app = routes::routes::get_routes()
-        .route("/", get(|| async {
-        Json(json!({
-            "status": "success",
-            "message": "Hello, World!",
-            "version": "1.0.0"
-        }))
-    }))
-    .route("/health", get(health_check_handler))
-    .layer(TraceLayer::new_for_http())
-    .with_state(state);
 
-    let host = std::env::var("HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
-    let port = std::env::var("PORT")
-        .unwrap_or_else(|_| "3000".to_string())
-        .parse::<u16>()
-        .expect("PORT must be a valid number");
-    
-    let addr = format!("{}:{}", host, port);
-    
+    // Load configuration from environment
+    let config = config::Config::from_env()
+        .expect("Failed to load configuration. Please check your environment variables.");
+
+    // Initialize logging with config
+    config::init_logging(&config.logging);
+
+    tracing::info!("🚀 Starting Rust Boilerplate Server...");
+    tracing::info!("🌍 Environment: {:?}", config.server.environment);
+
+    // Initialize database connection (optional - uncomment when ready to use)
+    // let db = config::init_database(&config.database)
+    //     .await
+    //     .expect("Failed to initialize database connection");
+    //
+    // Test database connection
+    // config::test_connection(&db)
+    //     .await
+    //     .expect("Database connection test failed");
+
+    let state = AppState {};
+
+    // Build the application with routes
+    let app = routes::routes::get_routes()
+        .route("/health", get(health_check_handler))
+        .layer(TraceLayer::new_for_http())
+        .with_state(state);
+
+    // Get server address from config
+    let addr = config.server_address();
     let listener = tokio::net::TcpListener::bind(&addr)
         .await
-        .expect(&format!("Failed to bind to {}", addr));
-    
+        .unwrap_or_else(|_| panic!("Failed to bind to {}", addr));
+
     tracing::info!("✅ Server successfully started at http://{}", addr);
-    tracing::info!("📝 Logs are being written to: ./logs/server.log");
-    
+    tracing::info!(
+        "📝 Logs are being written to: ./{}/{}",
+        config.logging.directory,
+        config.logging.file_name
+    );
+
     axum::serve(listener, app).await.unwrap();
 }

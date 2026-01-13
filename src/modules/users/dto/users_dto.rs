@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use uuid::Uuid;
 
 #[derive(Deserialize)]
 pub struct CreateUserDto {
@@ -8,7 +9,8 @@ pub struct CreateUserDto {
 
 #[derive(Serialize)]
 pub struct UserResponseDto {
-    pub id: i32,
+    pub id: Uuid,
     pub username: String,
     pub email: String,
+    pub active: bool,
 }
