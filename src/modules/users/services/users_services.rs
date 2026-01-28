@@ -1,4 +1,3 @@
-use uuid::Uuid;
 use crate::modules::users::dto::users_dto::{CreateUserDto, UserResponseDto};
 use uuid::Uuid;
 
