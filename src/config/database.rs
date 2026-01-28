@@ -3,7 +3,6 @@ use std::time::Duration;
 
 use super::env::DatabaseConfig;
 
-/// Initialize database connection with configuration
 #[allow(dead_code)]
 pub async fn init_database(config: &DatabaseConfig) -> Result<DatabaseConnection, DbErr> {
     let mut opt = ConnectOptions::new(&config.url);
@@ -24,7 +23,6 @@ pub async fn init_database(config: &DatabaseConfig) -> Result<DatabaseConnection
     Ok(db)
 }
 
-/// Test database connection
 #[allow(dead_code)]
 pub async fn test_connection(db: &DatabaseConnection) -> Result<(), DbErr> {
     let _ = db.ping().await?;

@@ -1,3 +1,2 @@
 #[derive(Clone)]
-pub struct AppState {
-}
+pub struct AppState {}

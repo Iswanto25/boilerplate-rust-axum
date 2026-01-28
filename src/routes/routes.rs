@@ -9,14 +9,11 @@ use crate::state::AppState;
 use crate::modules::users::controllers::users_controllers;
 
 fn user_routes() -> Router<AppState> {
-    Router::new()
-        .route("/", post(users_controllers::create)) 
+    Router::new().route("/", post(users_controllers::create))
 }
 
 pub fn get_routes() -> Router<AppState> {
-    Router::new()
-        .route("/", get(root_handler))
-        .nest("/users", user_routes()) 
+    Router::new().route("/", get(root_handler)).nest("/users", user_routes())
 }
 
 async fn root_handler() -> Json<serde_json::Value> {

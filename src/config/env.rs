@@ -1,7 +1,6 @@
 use serde::Deserialize;
 use std::env;
 
-/// Main configuration structure that combines all config modules
 #[derive(Debug, Clone, Deserialize)]
 #[allow(dead_code)]
 pub struct Config {
@@ -11,7 +10,6 @@ pub struct Config {
     pub jwt: JwtConfig,
 }
 
-/// Server configuration
 #[derive(Debug, Clone, Deserialize)]
 pub struct ServerConfig {
     pub host: String,
@@ -19,7 +17,6 @@ pub struct ServerConfig {
     pub environment: Environment,
 }
 
-/// Database configuration
 #[derive(Debug, Clone, Deserialize)]
 pub struct DatabaseConfig {
     pub url: String,
@@ -28,7 +25,6 @@ pub struct DatabaseConfig {
     pub connect_timeout: u64,
 }
 
-/// Logging configuration
 #[derive(Debug, Clone, Deserialize)]
 pub struct LoggingConfig {
     pub level: String,
@@ -36,7 +32,6 @@ pub struct LoggingConfig {
     pub file_name: String,
 }
 
-/// JWT configuration
 #[derive(Debug, Clone, Deserialize)]
 #[allow(dead_code)]
 pub struct JwtConfig {
@@ -44,7 +39,6 @@ pub struct JwtConfig {
     pub expiration: i64,
 }
 
-/// Application environment
 #[derive(Debug, Clone, Deserialize, PartialEq, Eq)]
 #[serde(rename_all = "lowercase")]
 pub enum Environment {
@@ -54,34 +48,18 @@ pub enum Environment {
 }
 
 impl Config {
-    /// Load configuration from environment variables
     pub fn from_env() -> Result<Self, ConfigError> {
         let server = ServerConfig {
             host: env::var("HOST").unwrap_or_else(|_| "127.0.0.1".to_string()),
-            port: env::var("PORT")
-                .unwrap_or_else(|_| "3000".to_string())
-                .parse()
-                .map_err(|_| ConfigError::InvalidPort)?,
-            environment: env::var("ENVIRONMENT")
-                .unwrap_or_else(|_| "development".to_string())
-                .parse()
-                .unwrap_or(Environment::Development),
+            port: env::var("PORT").unwrap_or_else(|_| "3000".to_string()).parse().map_err(|_| ConfigError::InvalidPort)?,
+            environment: env::var("ENVIRONMENT").unwrap_or_else(|_| "development".to_string()).parse().unwrap_or(Environment::Development),
         };
 
         let database = DatabaseConfig {
             url: env::var("DATABASE_URL").map_err(|_| ConfigError::MissingDatabaseUrl)?,
-            max_connections: env::var("DB_MAX_CONNECTIONS")
-                .unwrap_or_else(|_| "10".to_string())
-                .parse()
-                .unwrap_or(10),
-            min_connections: env::var("DB_MIN_CONNECTIONS")
-                .unwrap_or_else(|_| "2".to_string())
-                .parse()
-                .unwrap_or(2),
-            connect_timeout: env::var("DB_CONNECT_TIMEOUT")
-                .unwrap_or_else(|_| "30".to_string())
-                .parse()
-                .unwrap_or(30),
+            max_connections: env::var("DB_MAX_CONNECTIONS").unwrap_or_else(|_| "10".to_string()).parse().unwrap_or(10),
+            min_connections: env::var("DB_MIN_CONNECTIONS").unwrap_or_else(|_| "2".to_string()).parse().unwrap_or(2),
+            connect_timeout: env::var("DB_CONNECT_TIMEOUT").unwrap_or_else(|_| "30".to_string()).parse().unwrap_or(30),
         };
 
         let logging = LoggingConfig {
@@ -92,32 +70,21 @@ impl Config {
 
         let jwt = JwtConfig {
             secret: env::var("JWT_SECRET").map_err(|_| ConfigError::MissingJwtSecret)?,
-            expiration: env::var("JWT_EXPIRATION")
-                .unwrap_or_else(|_| "86400".to_string())
-                .parse()
-                .unwrap_or(86400), // Default 24 hours
+            expiration: env::var("JWT_EXPIRATION").unwrap_or_else(|_| "86400".to_string()).parse().unwrap_or(86400),
         };
 
-        Ok(Config {
-            server,
-            database,
-            logging,
-            jwt,
-        })
+        Ok(Config { server, database, logging, jwt })
     }
 
-    /// Get server address as string
     pub fn server_address(&self) -> String {
         format!("{}:{}", self.server.host, self.server.port)
     }
 
-    /// Check if running in production
     #[allow(dead_code)]
     pub fn is_production(&self) -> bool {
         self.server.environment == Environment::Production
     }
 
-    /// Check if running in development
     #[allow(dead_code)]
     pub fn is_development(&self) -> bool {
         self.server.environment == Environment::Development
@@ -137,7 +104,6 @@ impl std::str::FromStr for Environment {
     }
 }
 
-/// Configuration errors
 #[derive(Debug, thiserror::Error)]
 pub enum ConfigError {
     #[error("Invalid port number")]
